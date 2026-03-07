@@ -1,0 +1,15 @@
+version: '3'
+
+tasks:
+  default:
+    desc: List all available tasks
+    silent: true
+    cmd: task --list
+
+  run-tests:
+    desc: Run the test suite
+    cmd: go test ./...
+
+  do-lint:
+    desc: Run linters
+    cmd: golangci-lint run

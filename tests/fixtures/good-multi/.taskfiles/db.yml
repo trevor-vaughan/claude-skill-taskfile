@@ -1,0 +1,21 @@
+version: '3'
+
+vars:
+  DATABASE_URL: '{{.DATABASE_URL | default "postgres://localhost/webapp"}}'
+
+tasks:
+  default:
+    desc: List tasks in this module
+    silent: true
+    cmd: task db --list
+
+  migrate:
+    desc: Run database migrations
+    cmd: dbmate up
+
+  reset:
+    desc: Reset the database — DESTRUCTIVE
+    prompt: This will drop and recreate the database. Are you sure?
+    cmds:
+      - dbmate drop
+      - dbmate up

@@ -1,0 +1,26 @@
+version: '3'
+
+includes:
+  docker:
+    taskfile: .taskfiles/docker.yml
+  db:
+    taskfile: .taskfiles/db.yml
+
+vars:
+  APP: '{{.APP | default "webapp"}}'
+
+tasks:
+  default:
+    desc: List all available tasks
+    silent: true
+    cmd: task --list
+
+  build:
+    desc: Build the project (shortcut)
+    cmds:
+      - task: docker:build
+
+  check:
+    desc: Run all quality gates
+    cmds:
+      - task: docker:lint

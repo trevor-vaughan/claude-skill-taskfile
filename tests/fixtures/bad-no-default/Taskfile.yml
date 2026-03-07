@@ -1,0 +1,10 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build the project
+    cmd: go build ./...
+
+  test:
+    desc: Run tests
+    cmd: go test ./...

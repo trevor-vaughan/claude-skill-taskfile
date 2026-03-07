@@ -1,0 +1,103 @@
+executor: eval-run
+input:
+  id: ""
+  root: "."
+  test_dir: ".test-output"
+
+steps:
+  # Setup: create eval directory, copy skill, git init
+  - type: exec
+    script: |
+      set -e
+      eval_dir="{{.input.root}}/{{.input.test_dir}}/eval-{{.input.id}}"
+      rm -rf "$eval_dir"
+      mkdir -p "$eval_dir/.claude/skills/taskfile"
+      cp "{{.input.root}}/.claude/skills/taskfile/SKILL.md" "$eval_dir/.claude/skills/taskfile/SKILL.md"
+      cp "{{.input.root}}/.claude/skills/taskfile/lint.sh" "$eval_dir/.claude/skills/taskfile/lint.sh"
+      cd "$eval_dir" && git init -q
+      printf '%s' "$eval_dir"
+    assertions:
+      - result.code ShouldEqual 0
+    vars:
+      eval_dir:
+        from: result.systemout
+
+  # Execute Claude CLI with the eval prompt
+  - type: exec
+    timeout: 300
+    script: |
+      set -e
+      skill_file="{{.input.root}}/.claude/skills/taskfile/SKILL.md"
+      evals_json="{{.input.root}}/evals/evals.json"
+      prompt=$(jq -r '.evals[] | select(.id == {{.input.id}}) | .prompt' "$evals_json")
+      system_prompt="You MUST follow the skill instructions in $skill_file exactly. Work inside the directory {{.eval_dir}} — create all files there. Do not create files outside this directory."
+      cd "{{.eval_dir}}"
+      unset CLAUDECODE
+      claude -p "$prompt
+
+      $system_prompt" \
+        --allowedTools "Edit,Write,Bash(bash:*),Read,Glob,Grep" \
+        --output-format text
+    assertions:
+      - result.code ShouldEqual 0
+
+  # Lint check
+  - type: exec
+    script: |
+      set -e
+      bash "{{.input.root}}/.claude/skills/taskfile/lint.sh" "{{.eval_dir}}"
+    assertions:
+      - result.code ShouldEqual 0
+
+  # Module files exist under .taskfiles/
+  - type: exec
+    script: |
+      count=$(find "{{.eval_dir}}/.taskfiles" -maxdepth 1 -name '*.yml' 2>/dev/null | wc -l)
+      printf '%s' "$count"
+    assertions:
+      - result.code ShouldEqual 0
+      - result.systemout ShouldNotEqual 0
+
+  # Includes use taskfile: syntax
+  - type: exec
+    script: grep -q 'taskfile:' "{{.eval_dir}}/Taskfile.yml"
+    assertions:
+      - result.code ShouldEqual 0
+
+  # Shortcut tasks exist — root delegates to included namespaces
+  - type: exec
+    script: |
+      set -e
+      namespaces=$(sed -n '/^includes:/,/^[^ ]/{ /^  [a-zA-Z]/s/^\s*\([a-zA-Z_][a-zA-Z0-9_-]*\):.*/\1/p }' "{{.eval_dir}}/Taskfile.yml")
+      found=0
+      for ns in $namespaces; do
+        if grep -q "task: ${ns}:" "{{.eval_dir}}/Taskfile.yml"; then
+          found=$((found + 1))
+        fi
+      done
+      test "$found" -gt 0
+    assertions:
+      - result.code ShouldEqual 0
+
+  # No cross-module dependencies
+  - type: exec
+    script: |
+      set -e
+      namespaces=$(sed -n '/^includes:/,/^[^ ]/{ /^  [a-zA-Z]/s/^\s*\([a-zA-Z_][a-zA-Z0-9_-]*\):.*/\1/p }' "{{.eval_dir}}/Taskfile.yml")
+      cross_deps=0
+      for mod_file in "{{.eval_dir}}"/.taskfiles/*.yml; do
+        [ -f "$mod_file" ] || continue
+        mod_name=$(basename "$mod_file" .yml)
+        for ns in $namespaces; do
+          [ "$ns" = "$mod_name" ] && continue
+          if grep -q "task: ${ns}:" "$mod_file" 2>/dev/null; then
+            cross_deps=$((cross_deps + 1))
+          fi
+        done
+      done
+      test "$cross_deps" -eq 0
+    assertions:
+      - result.code ShouldEqual 0
+
+output:
+  eval_dir: "{{.eval_dir}}"

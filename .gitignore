@@ -1,0 +1,8 @@
+.claude/*
+!.claude/skills
+taskfile-workspace/
+.test-output/
+__pycache__/
+venom.log
+venom.*.log
+*.dump.json

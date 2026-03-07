@@ -1,0 +1,19 @@
+version: '3'
+
+vars:
+  REGISTRY: '{{.REGISTRY | default "ghcr.io/org"}}'
+  IMAGE: '{{.IMAGE | default "webapp"}}'
+
+tasks:
+  default:
+    desc: List tasks in this module
+    silent: true
+    cmd: task docker --list
+
+  build:
+    desc: Build the Docker image
+    cmd: docker build -t {{.REGISTRY}}/{{.IMAGE}} .
+
+  lint:
+    desc: Run linter
+    cmd: hadolint Dockerfile

@@ -1,0 +1,9 @@
+tasks:
+  default:
+    desc: List all available tasks
+    silent: true
+    cmd: task --list
+
+  build:
+    desc: Build the project
+    cmd: go build ./...

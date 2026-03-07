@@ -1,0 +1,15 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build the project
+    cmd: go build ./...
+
+  default:
+    desc: List all available tasks
+    silent: true
+    cmd: task --list
+
+  test:
+    desc: Run tests
+    cmd: go test ./...

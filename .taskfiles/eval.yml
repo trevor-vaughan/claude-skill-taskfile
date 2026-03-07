@@ -1,0 +1,27 @@
+version: '3'
+
+vars:
+  TEST_DIR: '{{.ROOT_DIR}}/{{.TEST_DIR | default ".test-output"}}'
+  EVALS_DIR: '{{.ROOT_DIR}}/evals'
+
+tasks:
+  default:
+    desc: List tasks in this module
+    silent: true
+    cmd: task eval --list
+
+  test:
+    desc: Run all LLM evals via Venom
+    cmds:
+      - venom run "{{.EVALS_DIR}}/evals.venom.yml" --var root="{{.ROOT_DIR}}" --var test_dir="{{.TEST_DIR}}" --lib-dir "{{.EVALS_DIR}}/lib" --output-dir "{{.TEST_DIR}}"
+      - defer: rm -f venom.log venom.*.log
+
+  run:
+    desc: Run a single eval by ID (pass ID via CLI_ARGS)
+    cmds:
+      - venom run "{{.EVALS_DIR}}/evals.venom.yml" --var root="{{.ROOT_DIR}}" --var test_dir="{{.TEST_DIR}}" --lib-dir "{{.EVALS_DIR}}/lib" --output-dir "{{.TEST_DIR}}"
+      - defer: rm -f venom.log venom.*.log
+
+  list:
+    desc: List eval cases
+    cmd: jq -r '.evals[] | "  \(.id). \(.prompt | .[0:80])..."' "{{.EVALS_DIR}}/evals.json"

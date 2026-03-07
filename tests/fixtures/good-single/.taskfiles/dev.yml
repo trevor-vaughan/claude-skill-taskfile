@@ -1,0 +1,18 @@
+version: '3'
+
+vars:
+  GO_FLAGS: '{{.GO_FLAGS | default ""}}'
+
+tasks:
+  default:
+    desc: List tasks in this module
+    silent: true
+    cmd: task dev --list
+
+  test:
+    desc: Run the test suite
+    cmd: go test ./...
+
+  build:
+    desc: Build the binary
+    cmd: go build {{.GO_FLAGS}} -o bin/app ./cmd/app

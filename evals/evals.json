@@ -1,0 +1,190 @@
+{
+  "skill_name": "taskfile",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a Taskfile.yml for a Python project. Include tasks for installing dependencies, running tests, linting, and formatting.",
+      "expected_output": "A root Taskfile.yml with a dev module in .taskfiles/ containing the Python workflow tasks, plus shortcut tasks in root",
+      "expectations": [
+        "Creates a file named Taskfile.yml (capital T, .yml extension)",
+        "Creates at least one module file under .taskfiles/ (e.g. dev.yml)",
+        "Root Taskfile.yml imports includes with 'taskfile: .taskfiles/name.yml' syntax",
+        "First non-comment line is version: '3'",
+        "All files have version: '3'",
+        "All files have a default task as the first task",
+        "The default task has a desc field",
+        "The default task runs task --list",
+        "Every public task has a desc: field",
+        "Uses vars: with defaults for variables",
+        "Root Taskfile.yml section order is version then vars then includes then tasks",
+        "Root Taskfile.yml has shortcut tasks that delegate to included tasks",
+        "Uses standard task names: test, lint, fmt (not run-tests, do-lint, format)",
+        "Has a check task with deps for quality gates (e.g. deps: [lint, test])"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Create a Taskfile.yml for a containerized app. I need a docker namespace with build, push, and run tasks, and a ci namespace with test, lint, and deploy tasks. Use includes.",
+      "expected_output": "A root Taskfile.yml and two module files in .taskfiles/ directory, all following skill conventions",
+      "expectations": [
+        "Creates a file named Taskfile.yml (capital T) at the root",
+        "Creates .taskfiles/docker.yml module file",
+        "Creates .taskfiles/ci.yml module file",
+        "Root Taskfile.yml imports includes with 'taskfile: .taskfiles/name.yml' syntax",
+        "Does NOT use bare string includes (e.g. dev: .taskfiles/dev.yml)",
+        "Does NOT place modules in tasks/ or alongside the root Taskfile.yml",
+        "All three files have version: '3'",
+        "All three files have a default task with task --list",
+        "Every public task across all files has a desc: field",
+        "Root Taskfile.yml section order is version then vars then includes then tasks",
+        "Root Taskfile.yml has shortcut tasks that delegate to included tasks (e.g. build delegates to docker:build)",
+        "Includes are self-contained with no cross-include task dependencies",
+        "Root shortcuts use standard names: build, test, lint (not compile, run-tests, etc.)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Create a Taskfile.yml for a Terraform infrastructure project. Include tasks for plan, apply, and destroy. The destroy task is destructive.",
+      "expected_output": "A root Taskfile.yml with an infra module in .taskfiles/ containing the Terraform tasks, with destroy using prompt for confirmation",
+      "expectations": [
+        "Creates a file named Taskfile.yml (capital T)",
+        "Creates at least one module file under .taskfiles/ (e.g. infra.yml)",
+        "Root Taskfile.yml imports includes with 'taskfile: .taskfiles/name.yml' syntax",
+        "All files have version: '3'",
+        "All files have a default task as the first task with task --list",
+        "Has a destroy task that uses prompt: for user confirmation",
+        "The destroy task desc mentions DESTRUCTIVE",
+        "Every public task has a desc: field",
+        "Root Taskfile.yml has shortcut tasks that delegate to included tasks"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Create a Taskfile.yml for a Rust project with tasks for build, test, clippy lint, format check, and a release build.",
+      "expected_output": "A root Taskfile.yml with a dev module in .taskfiles/ containing the Rust workflow tasks, plus shortcut tasks in root",
+      "expectations": [
+        "Creates a file named Taskfile.yml (capital T)",
+        "Creates at least one module file under .taskfiles/ (e.g. dev.yml)",
+        "Root Taskfile.yml imports includes with 'taskfile: .taskfiles/name.yml' syntax",
+        "All files have version: '3'",
+        "All files have a default task as the first task with task --list",
+        "Every public task has a desc: field",
+        "Uses cargo commands for build, test, clippy, and fmt",
+        "Uses standard task names: build, test, lint, fmt (not compile, run-tests, clippy, format)",
+        "Has a check task that combines quality gates (e.g. deps: [lint, test])",
+        "Root Taskfile.yml has shortcut tasks that delegate to included tasks"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "I have this Taskfile.yml already:\n\nversion: '3'\n\nvars:\n  APP: '{{.APP | default \"myapi\"}}'\n\ntasks:\n  default:\n    desc: List all available tasks\n    silent: true\n    cmd: task --list\n\n  dev:\n    desc: Start the dev server\n    cmd: go run ./cmd/server\n\nAdd tasks for running tests, benchmarks, and a database reset that drops everything.",
+      "expected_output": "The existing Taskfile.yml is refactored to use includes. Dev and db tasks go into appropriate modules under .taskfiles/. db:reset is destructive.",
+      "expectations": [
+        "Preserves the existing version: '3' line",
+        "Preserves the existing default task",
+        "Creates at least one module file under .taskfiles/ (e.g. dev.yml, db.yml)",
+        "Root Taskfile.yml imports includes with 'taskfile: .taskfiles/name.yml' syntax",
+        "All module files have version: '3'",
+        "All module files have a default task with task --list",
+        "Adds a test task with a desc field",
+        "Adds a benchmark task with a desc field",
+        "Adds a database reset task that uses prompt: for confirmation",
+        "The database reset desc mentions DESTRUCTIVE",
+        "Root Taskfile.yml has shortcut tasks that delegate to included tasks"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "I have this Taskfile.yml already:\n\nversion: '3'\n\nvars:\n  APP: '{{.APP | default \"myapp\"}}'\n\nincludes:\n  docker:\n    taskfile: .taskfiles/docker.yml\n\ntasks:\n  default:\n    desc: List all available tasks\n    silent: true\n    cmd: task --list\n\n  build:\n    desc: Build the Docker image (shortcut)\n    cmds:\n      - task: docker:build\n\n  push:\n    desc: Push the Docker image (shortcut)\n    cmds:\n      - task: docker:push\n\nAnd I have .taskfiles/docker.yml with build, push, and run tasks.\n\nAdd a new 'k8s' include with tasks for apply, diff, and rollback. The apply task should be destructive for production. Add shortcut tasks in the root Taskfile for the new k8s tasks.",
+      "expected_output": "A new .taskfiles/k8s.yml module file is created and imported in the root Taskfile.yml, with shortcut tasks in root",
+      "expectations": [
+        "Creates .taskfiles/k8s.yml module file",
+        "The k8s.yml file has version: '3'",
+        "The k8s.yml file has a default task with task --list",
+        "The k8s.yml file has apply, diff, and rollback tasks",
+        "Every public task in k8s.yml has a desc: field",
+        "The apply task or a production-apply task uses prompt: for destructive confirmation",
+        "Uses vars: with defaults in k8s.yml",
+        "Module is named after the concern (k8s), not a tool name (kubectl)",
+        "Root Taskfile.yml includes the k8s module with 'taskfile: .taskfiles/k8s.yml' syntax",
+        "Root Taskfile.yml has shortcut tasks that delegate to k8s: tasks (e.g. apply, diff, rollback)"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "i need a taskfile for my node/typescript monorepo. it uses pnpm and turborepo. i want to be able to lint, test, build, and also have a 'nuke' command that deletes all node_modules and turbo caches across the repo",
+      "expected_output": "A root Taskfile.yml with a dev module in .taskfiles/ containing the pnpm/turbo tasks, plus a destructive nuke task, following all conventions despite the casual prompt style",
+      "expectations": [
+        "Creates a file named Taskfile.yml (capital T)",
+        "Creates at least one module file under .taskfiles/ (e.g. dev.yml)",
+        "Root Taskfile.yml imports includes with 'taskfile: .taskfiles/name.yml' syntax",
+        "All files have version: '3'",
+        "All files have a default task as the first task with task --list",
+        "Has lint, test, and build tasks using pnpm or turbo commands",
+        "Uses standard task names: test, lint, build (not run-tests, do-lint, compile)",
+        "Has a check task that combines quality gates",
+        "Has a nuke task that uses prompt: before deleting",
+        "The nuke desc mentions DESTRUCTIVE",
+        "Every public task has a desc: field",
+        "Root Taskfile.yml has shortcut tasks that delegate to included tasks"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Create a Taskfile.yml for a full-stack web app. I need: docker tasks (build, push, run), database tasks (migrate, seed, reset — reset is destructive), and CI tasks (test, lint, typecheck). The project is called 'webapp' and uses a PostgreSQL database.",
+      "expected_output": "A root Taskfile.yml with includes for docker, db, and ci concerns — not a single flat file. Root provides shortcut tasks using standard names.",
+      "expectations": [
+        "Creates a root Taskfile.yml (capital T) that imports includes",
+        "Extracts at least 2 includes under .taskfiles/ (e.g. docker.yml, db.yml, ci.yml)",
+        "Includes are named after concerns (db.yml not postgres.yml or psql.yml)",
+        "Root Taskfile.yml has shortcut tasks delegating to included tasks",
+        "Root shortcuts use standard names: build, test, lint (not compile, run-tests, etc.)",
+        "Has a check task in root that combines quality gates",
+        "All files have version: '3'",
+        "All files have a default task with task --list",
+        "The database reset task uses prompt: for confirmation",
+        "The database reset desc mentions DESTRUCTIVE",
+        "Includes are self-contained with no cross-include task dependencies",
+        "Every public task across all files has a desc: field"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "Create a Taskfile.yml for a Go project.",
+      "expected_output": "A root Taskfile.yml with a dev module in .taskfiles/ containing Go workflow tasks, plus shortcut tasks in root using standard names",
+      "expectations": [
+        "Creates a file named Taskfile.yml (capital T)",
+        "Creates at least one module file under .taskfiles/ (e.g. dev.yml)",
+        "Root Taskfile.yml imports includes with 'taskfile: .taskfiles/name.yml' syntax",
+        "All files have version: '3'",
+        "All files have a default task as the first task with task --list",
+        "Every public task has a desc: field",
+        "Has a dev task for starting the development server or watch mode",
+        "Has a test task using go test",
+        "Has a build task using go build",
+        "Has a lint task (e.g. using golangci-lint or go vet)",
+        "Has a fmt task using gofmt or goimports",
+        "Has a check task that combines quality gates (e.g. deps: [lint, test])",
+        "Root Taskfile.yml has shortcut tasks that delegate to included tasks"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "Create a Taskfile.yml for a Python ML experiment runner. I need tasks for: setting up a virtual environment, installing dependencies, downloading datasets, preprocessing data, training the model, evaluating the model, exporting results to CSV, running the full pipeline (setup through evaluate), cleaning generated artifacts, and a check task.",
+      "expected_output": "A root Taskfile.yml with includes organized by ML domain concern (e.g. setup, data, train). Root provides shortcut tasks for the full pipeline.",
+      "expectations": [
+        "Creates a file named Taskfile.yml (capital T)",
+        "Creates at least 2 module files under .taskfiles/ organized by concern (e.g. setup.yml, data.yml, train.yml)",
+        "Root Taskfile.yml imports includes with 'taskfile: .taskfiles/name.yml' syntax",
+        "All files have version: '3'",
+        "All files have a default task as the first task with task --list",
+        "Every public task has a desc: field",
+        "Has a clean task for removing generated artifacts",
+        "Has a check task that combines quality gates",
+        "Uses standard task names where applicable (test, build, clean, check)",
+        "Root Taskfile.yml has shortcut tasks that delegate to included tasks",
+        "Includes are self-contained with no cross-include task dependencies"
+      ]
+    }
+  ]
+}

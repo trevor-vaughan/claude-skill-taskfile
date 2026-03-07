@@ -1,0 +1,11 @@
+version: '3'
+
+tasks:
+  default:
+    desc: List tasks in this module
+    silent: true
+    cmd: task dev --list
+
+  test:
+    desc: Run tests
+    cmd: go test ./...

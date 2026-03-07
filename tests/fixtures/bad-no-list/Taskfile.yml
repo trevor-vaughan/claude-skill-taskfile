@@ -1,0 +1,11 @@
+version: '3'
+
+tasks:
+  default:
+    desc: List all available tasks
+    silent: true
+    cmd: echo "hello world"
+
+  build:
+    desc: Build the project
+    cmd: go build ./...

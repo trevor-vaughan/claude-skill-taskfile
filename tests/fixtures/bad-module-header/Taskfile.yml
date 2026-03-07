@@ -1,0 +1,16 @@
+version: '3'
+
+includes:
+  dev:
+    taskfile: .taskfiles/dev.yml
+
+tasks:
+  default:
+    desc: List all available tasks
+    silent: true
+    cmd: task --list
+
+  test:
+    desc: Run tests (shortcut)
+    cmds:
+      - task: dev:test

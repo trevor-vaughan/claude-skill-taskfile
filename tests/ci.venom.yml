@@ -1,0 +1,168 @@
+name: CI test suite for Taskfile lint and parse checks
+vars:
+  root: "."
+
+testcases:
+  - name: Lint script exists and is runnable
+    steps:
+      - type: exec
+        script: test -f {{.root}}/.claude/skills/taskfile/lint.sh
+        assertions:
+          - result.code ShouldEqual 0
+      - type: exec
+        script: bash -n {{.root}}/.claude/skills/taskfile/lint.sh
+        assertions:
+          - result.code ShouldEqual 0
+
+  - name: Self-lint passes on project root
+    steps:
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}
+        assertions:
+          - result.code ShouldEqual 0
+
+  - name: Task parse validation
+    steps:
+      - type: exec
+        script: cd {{.root}} && task --list
+        assertions:
+          - result.code ShouldEqual 0
+      - type: exec
+        script: cd {{.root}} && task dev --list
+        assertions:
+          - result.code ShouldEqual 0
+      - type: exec
+        script: cd {{.root}} && task eval --list
+        assertions:
+          - result.code ShouldEqual 0
+
+  - name: Good fixtures pass lint
+    steps:
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}/tests/fixtures/good-single
+        assertions:
+          - result.code ShouldEqual 0
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}/tests/fixtures/good-multi
+        assertions:
+          - result.code ShouldEqual 0
+
+  - name: bad-lowercase detected by lint
+    steps:
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}/tests/fixtures/bad-lowercase
+        assertions:
+          - result.code ShouldEqual 1
+          - result.systemout ShouldContainSubstring "found lowercase"
+
+  - name: bad-no-header detected by lint
+    steps:
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}/tests/fixtures/bad-no-header
+        assertions:
+          - result.code ShouldEqual 1
+          - result.systemout ShouldContainSubstring "version:"
+
+  - name: bad-no-default detected by lint
+    steps:
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}/tests/fixtures/bad-no-default
+        assertions:
+          - result.code ShouldEqual 1
+          - result.systemout ShouldContainSubstring "default is first task"
+
+  - name: bad-default-not-first detected by lint
+    steps:
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}/tests/fixtures/bad-default-not-first
+        assertions:
+          - result.code ShouldEqual 1
+          - result.systemout ShouldContainSubstring "first task"
+
+  - name: bad-no-doc-comments detected by lint
+    steps:
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}/tests/fixtures/bad-no-doc-comments
+        assertions:
+          - result.code ShouldEqual 1
+          - result.systemout ShouldContainSubstring "missing on:"
+
+  - name: bad-no-list detected by lint
+    steps:
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}/tests/fixtures/bad-no-list
+        assertions:
+          - result.code ShouldEqual 1
+          - result.systemout ShouldContainSubstring "default task lists tasks"
+
+  - name: bad-bare-include detected by lint
+    steps:
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}/tests/fixtures/bad-bare-include
+        assertions:
+          - result.code ShouldEqual 1
+          - result.systemout ShouldContainSubstring "Include imports use explicit taskfile path"
+
+  - name: bad-section-order detected by lint
+    steps:
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}/tests/fixtures/bad-section-order
+        assertions:
+          - result.code ShouldEqual 1
+          - result.systemout ShouldContainSubstring "Section order"
+
+  - name: bad-module-header detected by lint
+    steps:
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}/tests/fixtures/bad-module-header
+        assertions:
+          - result.code ShouldEqual 1
+          - result.systemout ShouldContainSubstring "version:"
+
+  - name: bad-subprocess-call detected by lint
+    steps:
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}/tests/fixtures/bad-subprocess-call
+        assertions:
+          - result.code ShouldEqual 1
+          - result.systemout ShouldContainSubstring "subprocess task calls"
+
+  - name: bad-adhoc-names detected by lint
+    steps:
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}/tests/fixtures/bad-adhoc-names
+        assertions:
+          - result.code ShouldEqual 1
+          - result.systemout ShouldContainSubstring "Standard task names"
+
+  - name: bad-no-check detected by lint
+    steps:
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}/tests/fixtures/bad-no-check
+        assertions:
+          - result.code ShouldEqual 1
+          - result.systemout ShouldContainSubstring "check"
+
+  - name: bad-yaml-extension detected by lint
+    steps:
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}/tests/fixtures/bad-yaml-extension
+        assertions:
+          - result.code ShouldEqual 1
+          - result.systemout ShouldContainSubstring "Taskfile.yaml"
+
+  - name: bad-tasks-dir detected by lint
+    steps:
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}/tests/fixtures/bad-tasks-dir
+        assertions:
+          - result.code ShouldEqual 1
+          - result.systemout ShouldContainSubstring "tasks/"
+
+  - name: bad-include-dir detected by lint
+    steps:
+      - type: exec
+        script: bash {{.root}}/.claude/skills/taskfile/lint.sh {{.root}}/tests/fixtures/bad-include-dir
+        assertions:
+          - result.code ShouldEqual 1
+          - result.systemout ShouldContainSubstring "dir:"

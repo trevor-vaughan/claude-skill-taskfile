@@ -1,0 +1,75 @@
+name: LLM Eval Suite for Taskfile Skill
+vars:
+  root: "."
+  test_dir: ".test-output"
+
+testcases:
+  - name: "Eval 1 — Python project Taskfile"
+    steps:
+      - type: eval-run
+        id: "1"
+        root: "{{.root}}"
+        test_dir: "{{.test_dir}}"
+
+  - name: "Eval 2 — Containerized app with docker and ci includes"
+    steps:
+      - type: eval-run
+        id: "2"
+        root: "{{.root}}"
+        test_dir: "{{.test_dir}}"
+
+  - name: "Eval 3 — Terraform infrastructure with destructive destroy"
+    steps:
+      - type: eval-run
+        id: "3"
+        root: "{{.root}}"
+        test_dir: "{{.test_dir}}"
+
+  - name: "Eval 4 — Rust project with clippy and format tasks"
+    steps:
+      - type: eval-run
+        id: "4"
+        root: "{{.root}}"
+        test_dir: "{{.test_dir}}"
+
+  - name: "Eval 5 — Extend existing Go Taskfile with tests and db reset"
+    steps:
+      - type: eval-run
+        id: "5"
+        root: "{{.root}}"
+        test_dir: "{{.test_dir}}"
+
+  - name: "Eval 6 — Add k8s include to existing Taskfile"
+    steps:
+      - type: eval-run
+        id: "6"
+        root: "{{.root}}"
+        test_dir: "{{.test_dir}}"
+
+  - name: "Eval 7 — Node/TypeScript monorepo with pnpm and turborepo"
+    steps:
+      - type: eval-run
+        id: "7"
+        root: "{{.root}}"
+        test_dir: "{{.test_dir}}"
+
+  - name: "Eval 8 — Full-stack webapp with docker, db, and ci"
+    steps:
+      - type: eval-run
+        id: "8"
+        root: "{{.root}}"
+        test_dir: "{{.test_dir}}"
+
+  - name: "Eval 9 — Go project Taskfile"
+    steps:
+      - type: eval-run
+        id: "9"
+        root: "{{.root}}"
+        test_dir: "{{.test_dir}}"
+
+  - name: "Eval 10 — Python ML experiment runner with full pipeline"
+    steps:
+      - type: eval-run
+        id: "10"
+        root: "{{.root}}"
+        test_dir: "{{.test_dir}}"
