@@ -11,9 +11,10 @@ steps:
       set -e
       eval_dir="{{.input.root}}/{{.input.test_dir}}/eval-{{.input.id}}"
       rm -rf "$eval_dir"
-      mkdir -p "$eval_dir/.claude/skills/taskfile"
+      mkdir -p "$eval_dir/.claude/skills/taskfile/templates"
       cp "{{.input.root}}/.claude/skills/taskfile/SKILL.md" "$eval_dir/.claude/skills/taskfile/SKILL.md"
       cp "{{.input.root}}/.claude/skills/taskfile/lint.sh" "$eval_dir/.claude/skills/taskfile/lint.sh"
+      cp "{{.input.root}}/.claude/skills/taskfile/templates/Taskfile.yml" "$eval_dir/.claude/skills/taskfile/templates/Taskfile.yml"
       cd "$eval_dir" && git init -q
       printf '%s' "$eval_dir"
     assertions:
@@ -64,7 +65,7 @@ steps:
     assertions:
       - result.code ShouldEqual 0
 
-  # Shortcut tasks exist — root delegates to included namespaces
+  # Alias tasks exist — root delegates to included namespaces
   - type: exec
     script: |
       set -e
@@ -76,6 +77,19 @@ steps:
         fi
       done
       test "$found" -gt 0
+    assertions:
+      - result.code ShouldEqual 0
+
+  # TEST_DIR variable defined in root Taskfile.yml
+  - type: exec
+    script: grep -q 'TEST_DIR:' "{{.eval_dir}}/Taskfile.yml"
+    assertions:
+      - result.code ShouldEqual 0
+
+  # Clean task references TEST_DIR or .test-output
+  - type: exec
+    script: |
+      grep -A2 'clean:' "{{.eval_dir}}/Taskfile.yml" | grep -qE '(TEST_DIR|\.test-output)'
     assertions:
       - result.code ShouldEqual 0
 

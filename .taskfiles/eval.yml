@@ -6,21 +6,25 @@ vars:
 
 tasks:
   default:
-    desc: List tasks in this module
     silent: true
     cmd: task eval --list
 
   test:
     desc: Run all LLM evals via Venom
     cmds:
+      - mkdir -p "{{.TEST_DIR}}"
       - venom run "{{.EVALS_DIR}}/evals.venom.yml" --var root="{{.ROOT_DIR}}" --var test_dir="{{.TEST_DIR}}" --lib-dir "{{.EVALS_DIR}}/lib" --output-dir "{{.TEST_DIR}}"
-      - defer: rm -f venom.log venom.*.log
 
   run:
-    desc: Run a single eval by ID (pass ID via CLI_ARGS)
+    desc: "Run a single eval by ID (e.g. task eval:run -- 3)"
+    requires:
+      vars: [CLI_ARGS]
+    vars:
+      EVAL_DESC:
+        sh: jq -r '.evals[] | select(.id == {{.CLI_ARGS}}) | .prompt | .[0:60]' "{{.EVALS_DIR}}/evals.json"
     cmds:
-      - venom run "{{.EVALS_DIR}}/evals.venom.yml" --var root="{{.ROOT_DIR}}" --var test_dir="{{.TEST_DIR}}" --lib-dir "{{.EVALS_DIR}}/lib" --output-dir "{{.TEST_DIR}}"
-      - defer: rm -f venom.log venom.*.log
+      - mkdir -p "{{.TEST_DIR}}"
+      - venom run "{{.EVALS_DIR}}/eval-single.venom.yml" --var id="{{.CLI_ARGS}}" --var desc="{{.EVAL_DESC}}" --var root="{{.ROOT_DIR}}" --var test_dir="{{.TEST_DIR}}" --lib-dir "{{.EVALS_DIR}}/lib" --output-dir "{{.TEST_DIR}}"
 
   list:
     desc: List eval cases

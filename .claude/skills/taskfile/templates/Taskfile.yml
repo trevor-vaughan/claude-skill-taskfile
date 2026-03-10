@@ -1,12 +1,13 @@
 version: '3'
 
+# dotenv: [".env"]
+
 includes:
   dev:
     taskfile: .taskfiles/dev.yml
-  eval:
-    taskfile: .taskfiles/eval.yml
 
 vars:
+  APP_NAME: '{{.APP_NAME | default "myapp"}}'
   TEST_DIR: '{{.TEST_DIR | default ".test-output"}}'
 
 tasks:
@@ -66,14 +67,15 @@ tasks:
     cmds:
       - task: dev:lint
 
+  build:
+    desc: "Alias for dev:build"
+    cmds:
+      - task: dev:build
+
   check:
-    desc: Run all CI-safe quality gates
+    desc: Run all quality gates
     deps: [lint, test]
 
-  install:
-    desc: Install skill into ~/.claude/skills/ via symlink
-    cmd: bash "{{.ROOT_DIR}}/scripts/install.sh" "{{.ROOT_DIR}}/.claude/skills"
-
   clean:
-    desc: Remove eval output artifacts
-    cmd: rm -rf "{{.ROOT_DIR}}/{{.TEST_DIR}}"
+    desc: Remove build artifacts and test output
+    cmd: rm -rf bin/ dist/ {{.TEST_DIR}}

@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "Create a Taskfile.yml for a Python project. Include tasks for installing dependencies, running tests, linting, and formatting.",
-      "expected_output": "A root Taskfile.yml with a dev module in .taskfiles/ containing the Python workflow tasks, plus shortcut tasks in root",
+      "expected_output": "A root Taskfile.yml with a dev module in .taskfiles/ containing the Python workflow tasks, plus alias tasks in root",
       "expectations": [
         "Creates a file named Taskfile.yml (capital T, .yml extension)",
         "Creates at least one module file under .taskfiles/ (e.g. dev.yml)",
@@ -12,14 +12,16 @@
         "First non-comment line is version: '3'",
         "All files have version: '3'",
         "All files have a default task as the first task",
-        "The default task has a desc field",
+        "The default task does NOT have a desc field",
         "The default task runs task --list",
         "Every public task has a desc: field",
         "Uses vars: with defaults for variables",
-        "Root Taskfile.yml section order is version then vars then includes then tasks",
-        "Root Taskfile.yml has shortcut tasks that delegate to included tasks",
+        "Root Taskfile.yml section order is version then includes then vars then tasks",
+        "Root Taskfile.yml has alias tasks that delegate to included tasks",
         "Uses standard task names: test, lint, fmt (not run-tests, do-lint, format)",
-        "Has a check task with deps for quality gates (e.g. deps: [lint, test])"
+        "Has a check task with deps for quality gates (e.g. deps: [lint, test])",
+        "Root Taskfile.yml defines a TEST_DIR variable defaulting to .test-output",
+        "Clean task removes .test-output or {{.TEST_DIR}}"
       ]
     },
     {
@@ -36,10 +38,10 @@
         "All three files have version: '3'",
         "All three files have a default task with task --list",
         "Every public task across all files has a desc: field",
-        "Root Taskfile.yml section order is version then vars then includes then tasks",
-        "Root Taskfile.yml has shortcut tasks that delegate to included tasks (e.g. build delegates to docker:build)",
+        "Root Taskfile.yml section order is version then includes then vars then tasks",
+        "Root Taskfile.yml has alias tasks that delegate to included tasks (e.g. build delegates to docker:build)",
         "Includes are self-contained with no cross-include task dependencies",
-        "Root shortcuts use standard names: build, test, lint (not compile, run-tests, etc.)"
+        "Root aliases use standard names: build, test, lint (not compile, run-tests, etc.)"
       ]
     },
     {
@@ -55,13 +57,13 @@
         "Has a destroy task that uses prompt: for user confirmation",
         "The destroy task desc mentions DESTRUCTIVE",
         "Every public task has a desc: field",
-        "Root Taskfile.yml has shortcut tasks that delegate to included tasks"
+        "Root Taskfile.yml has alias tasks that delegate to included tasks"
       ]
     },
     {
       "id": 4,
       "prompt": "Create a Taskfile.yml for a Rust project with tasks for build, test, clippy lint, format check, and a release build.",
-      "expected_output": "A root Taskfile.yml with a dev module in .taskfiles/ containing the Rust workflow tasks, plus shortcut tasks in root",
+      "expected_output": "A root Taskfile.yml with a dev module in .taskfiles/ containing the Rust workflow tasks, plus alias tasks in root",
       "expectations": [
         "Creates a file named Taskfile.yml (capital T)",
         "Creates at least one module file under .taskfiles/ (e.g. dev.yml)",
@@ -72,7 +74,8 @@
         "Uses cargo commands for build, test, clippy, and fmt",
         "Uses standard task names: build, test, lint, fmt (not compile, run-tests, clippy, format)",
         "Has a check task that combines quality gates (e.g. deps: [lint, test])",
-        "Root Taskfile.yml has shortcut tasks that delegate to included tasks"
+        "Root Taskfile.yml has alias tasks that delegate to included tasks",
+        "Root Taskfile.yml defines a TEST_DIR variable defaulting to .test-output"
       ]
     },
     {
@@ -90,13 +93,13 @@
         "Adds a benchmark task with a desc field",
         "Adds a database reset task that uses prompt: for confirmation",
         "The database reset desc mentions DESTRUCTIVE",
-        "Root Taskfile.yml has shortcut tasks that delegate to included tasks"
+        "Root Taskfile.yml has alias tasks that delegate to included tasks"
       ]
     },
     {
       "id": 6,
-      "prompt": "I have this Taskfile.yml already:\n\nversion: '3'\n\nvars:\n  APP: '{{.APP | default \"myapp\"}}'\n\nincludes:\n  docker:\n    taskfile: .taskfiles/docker.yml\n\ntasks:\n  default:\n    desc: List all available tasks\n    silent: true\n    cmd: task --list\n\n  build:\n    desc: Build the Docker image (shortcut)\n    cmds:\n      - task: docker:build\n\n  push:\n    desc: Push the Docker image (shortcut)\n    cmds:\n      - task: docker:push\n\nAnd I have .taskfiles/docker.yml with build, push, and run tasks.\n\nAdd a new 'k8s' include with tasks for apply, diff, and rollback. The apply task should be destructive for production. Add shortcut tasks in the root Taskfile for the new k8s tasks.",
-      "expected_output": "A new .taskfiles/k8s.yml module file is created and imported in the root Taskfile.yml, with shortcut tasks in root",
+      "prompt": "I have this Taskfile.yml already:\n\nversion: '3'\n\nvars:\n  APP: '{{.APP | default \"myapp\"}}'\n\nincludes:\n  docker:\n    taskfile: .taskfiles/docker.yml\n\ntasks:\n  default:\n    desc: List all available tasks\n    silent: true\n    cmd: task --list\n\n  build:\n    desc: Build the Docker image (shortcut)\n    cmds:\n      - task: docker:build\n\n  push:\n    desc: Push the Docker image (shortcut)\n    cmds:\n      - task: docker:push\n\nAnd I have .taskfiles/docker.yml with build, push, and run tasks.\n\nAdd a new 'k8s' include with tasks for apply, diff, and rollback. The apply task should be destructive for production. Add alias tasks in the root Taskfile for the new k8s tasks.",
+      "expected_output": "A new .taskfiles/k8s.yml module file is created and imported in the root Taskfile.yml, with alias tasks in root",
       "expectations": [
         "Creates .taskfiles/k8s.yml module file",
         "The k8s.yml file has version: '3'",
@@ -107,7 +110,7 @@
         "Uses vars: with defaults in k8s.yml",
         "Module is named after the concern (k8s), not a tool name (kubectl)",
         "Root Taskfile.yml includes the k8s module with 'taskfile: .taskfiles/k8s.yml' syntax",
-        "Root Taskfile.yml has shortcut tasks that delegate to k8s: tasks (e.g. apply, diff, rollback)"
+        "Root Taskfile.yml has alias tasks that delegate to k8s: tasks (e.g. apply, diff, rollback)"
       ]
     },
     {
@@ -126,19 +129,19 @@
         "Has a nuke task that uses prompt: before deleting",
         "The nuke desc mentions DESTRUCTIVE",
         "Every public task has a desc: field",
-        "Root Taskfile.yml has shortcut tasks that delegate to included tasks"
+        "Root Taskfile.yml has alias tasks that delegate to included tasks"
       ]
     },
     {
       "id": 8,
       "prompt": "Create a Taskfile.yml for a full-stack web app. I need: docker tasks (build, push, run), database tasks (migrate, seed, reset — reset is destructive), and CI tasks (test, lint, typecheck). The project is called 'webapp' and uses a PostgreSQL database.",
-      "expected_output": "A root Taskfile.yml with includes for docker, db, and ci concerns — not a single flat file. Root provides shortcut tasks using standard names.",
+      "expected_output": "A root Taskfile.yml with includes for docker, db, and ci concerns — not a single flat file. Root provides alias tasks using standard names.",
       "expectations": [
         "Creates a root Taskfile.yml (capital T) that imports includes",
         "Extracts at least 2 includes under .taskfiles/ (e.g. docker.yml, db.yml, ci.yml)",
         "Includes are named after concerns (db.yml not postgres.yml or psql.yml)",
-        "Root Taskfile.yml has shortcut tasks delegating to included tasks",
-        "Root shortcuts use standard names: build, test, lint (not compile, run-tests, etc.)",
+        "Root Taskfile.yml has alias tasks delegating to included tasks",
+        "Root aliases use standard names: build, test, lint (not compile, run-tests, etc.)",
         "Has a check task in root that combines quality gates",
         "All files have version: '3'",
         "All files have a default task with task --list",
@@ -151,7 +154,7 @@
     {
       "id": 9,
       "prompt": "Create a Taskfile.yml for a Go project.",
-      "expected_output": "A root Taskfile.yml with a dev module in .taskfiles/ containing Go workflow tasks, plus shortcut tasks in root using standard names",
+      "expected_output": "A root Taskfile.yml with a dev module in .taskfiles/ containing Go workflow tasks, plus alias tasks in root using standard names",
       "expectations": [
         "Creates a file named Taskfile.yml (capital T)",
         "Creates at least one module file under .taskfiles/ (e.g. dev.yml)",
@@ -165,13 +168,14 @@
         "Has a lint task (e.g. using golangci-lint or go vet)",
         "Has a fmt task using gofmt or goimports",
         "Has a check task that combines quality gates (e.g. deps: [lint, test])",
-        "Root Taskfile.yml has shortcut tasks that delegate to included tasks"
+        "Root Taskfile.yml has alias tasks that delegate to included tasks",
+        "Root Taskfile.yml defines a TEST_DIR variable defaulting to .test-output"
       ]
     },
     {
       "id": 10,
       "prompt": "Create a Taskfile.yml for a Python ML experiment runner. I need tasks for: setting up a virtual environment, installing dependencies, downloading datasets, preprocessing data, training the model, evaluating the model, exporting results to CSV, running the full pipeline (setup through evaluate), cleaning generated artifacts, and a check task.",
-      "expected_output": "A root Taskfile.yml with includes organized by ML domain concern (e.g. setup, data, train). Root provides shortcut tasks for the full pipeline.",
+      "expected_output": "A root Taskfile.yml with includes organized by ML domain concern (e.g. setup, data, train). Root provides alias tasks for the full pipeline.",
       "expectations": [
         "Creates a file named Taskfile.yml (capital T)",
         "Creates at least 2 module files under .taskfiles/ organized by concern (e.g. setup.yml, data.yml, train.yml)",
@@ -182,7 +186,7 @@
         "Has a clean task for removing generated artifacts",
         "Has a check task that combines quality gates",
         "Uses standard task names where applicable (test, build, clean, check)",
-        "Root Taskfile.yml has shortcut tasks that delegate to included tasks",
+        "Root Taskfile.yml has alias tasks that delegate to included tasks",
         "Includes are self-contained with no cross-include task dependencies"
       ]
     }

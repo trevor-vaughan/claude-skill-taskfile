@@ -55,13 +55,15 @@ This symlinks the skill into `~/.claude/skills/` so it's available globally. Alt
 ```
 .claude/skills/taskfile/SKILL.md  # The skill prompt
 .claude/skills/taskfile/lint.sh   # Structural lint (run by LLM after generating)
+.claude/skills/taskfile/templates/Taskfile.yml  # Base template for new root Taskfiles
 Taskfile.yml                      # Thin orchestrator
 .taskfiles/dev.yml                # Dev module (test, lint)
 .taskfiles/eval.yml               # LLM eval module (requires Claude CLI)
 scripts/install.sh                # Skill installer (called by task install)
 tests/ci.venom.yml                # CI test suite (Venom)
 tests/fixtures/                   # Good and bad Taskfile fixtures
-evals/evals.venom.yml             # LLM eval suite (Venom)
+evals/evals.venom.yml             # LLM eval suite (Venom, all evals)
+evals/eval-single.venom.yml      # Single-eval runner (Venom, by ID)
 evals/lib/eval-run.yml            # Venom user executor for per-eval logic
 evals/evals.json                  # 10 structured LLM eval cases
 .github/workflows/ci.yml          # GitHub Actions CI pipeline

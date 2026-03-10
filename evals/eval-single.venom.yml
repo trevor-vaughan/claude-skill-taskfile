@@ -1,0 +1,14 @@
+name: Single eval run
+vars:
+  id: ""
+  desc: ""
+  root: "."
+  test_dir: ".test-output"
+
+testcases:
+  - name: "Eval {{.id}} — {{.desc}}"
+    steps:
+      - type: eval-run
+        id: "{{.id}}"
+        root: "{{.root}}"
+        test_dir: "{{.test_dir}}"

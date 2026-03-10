@@ -2,18 +2,18 @@ version: '3'
 
 vars:
   LINT_SCRIPT: '{{.ROOT_DIR}}/.claude/skills/taskfile/lint.sh'
+  TEST_DIR: '{{.ROOT_DIR}}/{{.TEST_DIR | default ".test-output"}}'
 
 tasks:
   default:
-    desc: List tasks in this module
     silent: true
     cmd: task dev --list
 
   test:
     desc: Run CI-safe tests (lint script + fixtures + parse checks)
     cmds:
-      - venom run "{{.ROOT_DIR}}/tests/" --var root="{{.ROOT_DIR}}"
-      - defer: rm -f venom.log venom.*.log
+      - mkdir -p "{{.TEST_DIR}}"
+      - venom run "{{.ROOT_DIR}}/tests/" --var root="{{.ROOT_DIR}}" --output-dir "{{.TEST_DIR}}"
 
   lint:
     desc: Run lint script against this project's own Taskfile

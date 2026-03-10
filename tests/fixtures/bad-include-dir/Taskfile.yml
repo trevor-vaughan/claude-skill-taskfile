@@ -12,6 +12,6 @@ tasks:
     cmd: task --list
 
   test:
-    desc: Run tests (shortcut)
+    desc: "Alias for dev:test"
     cmds:
       - task: dev:test

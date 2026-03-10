@@ -15,12 +15,12 @@ These are patterns the model often generates incorrectly. Check your output agai
 | Include file at `tasks/foo.yml` or alongside root                  | Include file at `.taskfiles/foo.yml`                                                 |
 | `cmd: task other:task` (subprocess)                                | `task: other:task` (internal call, preserves context)                                |
 | Passing args via `cmd: task name -- {{.CLI_ARGS}}`                 | Internal `task:` call with `vars:` map                                               |
-| Task without `desc:` that should be public                         | Every public task gets a `desc:` field                                               |
+| Task without `desc:` that should be public                         | Every public task (except `default`) gets a `desc:` field                            |
 | `internal: true` to hide from listing                              | Omit `desc:` to hide from `--list` (still callable); `internal: true` blocks CLI invocation entirely (other tasks can still call it) |
 | Flat root Taskfile with domain tasks                               | Extract includes by domain concern when project has multiple concerns                |
 | Include named after a tool (`psql.yml`)                            | Include named after a concern (`db.yml`)                                             |
 | Test tasks in `docker.yml` because tests run in a container        | Test tasks in `test.yml` — classify by purpose, not implementation                   |
-| Root task duplicates include logic                                 | Root shortcut delegates via `deps:` or `cmds: [{task: "mod:task"}]`                  |
+| Root task duplicates include logic                                 | Root alias delegates via `deps:` or `cmds: [{task: "mod:task"}]`                  |
 | Ad-hoc task names (`run-tests`, `do-lint`)                         | Standard names: `test`, `lint`, `build`, `dev`, `fmt`, `check`                       |
 | Bare `{{.CLI_ARGS}}` without fallback in included tasks            | Use `ARGS` var with fallback: `{{.ARGS \| default .CLI_ARGS}}`                       |
 | Colons in unquoted YAML values                                     | Escape colons or use `cmd:` form with template trick                                 |
@@ -29,6 +29,8 @@ These are patterns the model often generates incorrectly. Check your output agai
 | `do_something` (snake_case task name)                               | `do-something` — kebab-case for task names                                           |
 | `version: 2` or missing version                                    | `version: '3'` (quoted string) as the first line                                    |
 | Long shell script in `cmd: \|` block (>5 lines)                    | Extract to `scripts/<name>.sh` and call `bash {{.ROOT_DIR}}/scripts/<name>.sh`       |
+| Test output scattered in working directory (e.g. `venom.log`)      | Route all test artifacts to `.test-output/` via `--output-dir` or equivalent flags   |
+| `defer: rm -f` to clean up test logs                               | Use `--output-dir` to route output properly; don't generate-then-delete              |
 
 ## MANDATORY RULES — apply to EVERY file you create or edit
 
@@ -39,11 +41,10 @@ These rules are non-negotiable. Violating any of them is a bug you must fix.
    ```yaml
    version: '3'
    ```
-3. EVERY file MUST have `default` as its first task:
+3. EVERY file MUST have `default` as its first task. The `default` task MUST NOT have a `desc:` field (keeps it hidden from its own listing). The base template contains the canonical `default` implementation with namespace-grouped formatting — copy it exactly, do not simplify it:
    ```yaml
    tasks:
      default:
-       desc: List all available tasks
        silent: true
        cmd: task --list
    ```
@@ -61,7 +62,7 @@ These rules are non-negotiable. Violating any of them is a bug you must fix.
    vars:
      APP_NAME: '{{.APP_NAME | default "myapp"}}'
    ```
-8. Every public task gets a `desc:` field describing what it does.
+8. Every public task (except `default`) gets a `desc:` field describing what it does. The `default` task omits `desc:` so it stays hidden from its own listing.
 9. Parameterized tasks document variables in the `desc:` or with a comment above the task.
 10. Private/helper tasks omit `desc:` (hidden from `--list`, still callable). Do NOT use `internal: true` unless you want to block direct invocation entirely.
 11. Dependencies use the `deps:` field:
@@ -77,8 +78,8 @@ These rules are non-negotiable. Violating any of them is a bug you must fix.
       prompt: This will destroy everything. Are you sure?
       cmd: echo "Destroying..."
     ```
-13. For multi-concern projects, extract includes by domain concern. Name includes after the concern (`db.yml`), not the tool (`psql.yml`). The root Taskfile.yml should be a thin orchestrator with only `default`, shortcut tasks, and project-wide tasks like `check` or `clean`.
-14. Root Taskfile.yml with includes should provide shortcut tasks for common workflows that delegate to included tasks, so developers get a flat namespace for everyday tasks.
+13. For multi-concern projects, extract includes by domain concern. Name includes after the concern (`db.yml`), not the tool (`psql.yml`). The root Taskfile.yml should be a thin orchestrator with only `default`, alias tasks, and project-wide tasks like `check` or `clean`.
+14. Root Taskfile.yml with includes should provide alias tasks for common workflows that delegate to included tasks, so developers get a flat namespace for everyday tasks. Use `desc: "Alias for <namespace>:<task>"` on these tasks.
 15. Use the standard task names (`dev`, `test`, `build`, `lint`, `fmt`, `check`, `clean`) as the root Taskfile.yml's public API — see the vocabulary table below. Never use ad-hoc alternatives like `run-tests`, `do-lint`, `compile`, or `format`.
 16. In included files, use `{{.ROOT_DIR}}` to reference project root paths. Never use bare relative paths — included task working directories may differ from the project root.
 17. Use internal `task:` calls (not `cmd: task`) to call other tasks. Subprocess calls lose `USER_WORKING_DIR` context.
@@ -94,11 +95,28 @@ These rules are non-negotiable. Violating any of them is a bug you must fix.
         vars:
           ARGS: '{{.CLI_ARGS}}'
     ```
-19. Extract inline scripts longer than ~5 lines to `scripts/` files. Taskfiles should stay declarative — long shell blocks are hard to read, can't be linted by shellcheck, and can't be tested independently. Put scripts in `scripts/` at the project root (or `{{.ROOT_DIR}}/scripts/` from includes) and call them:
+19. Extract inline scripts longer than ~5 lines to `scripts/` files. Taskfiles should stay declarative — long shell blocks are hard to read, can't be linted by shellcheck, and can't be tested independently. **Exception:** the `default` task's awk formatter from the base template is exempt — it is identical boilerplate copied verbatim, not project logic. Put scripts in `scripts/` at the project root (or `{{.ROOT_DIR}}/scripts/` from includes) and call them:
     ```yaml
     deploy:
       desc: Deploy the application
       cmd: bash "{{.ROOT_DIR}}/scripts/deploy.sh" {{.ENV}}
+    ```
+20. Route ALL test output (logs, results, coverage) to `.test-output/` at the project root. Define a `TEST_DIR` variable in the root Taskfile.yml and pass it down to includes. Test tools that produce output files (Venom, pytest, Jest, go test, etc.) MUST use their native output-directory flags (e.g., `--output-dir` for Venom, `--junitxml` for pytest) to write directly to `.test-output/`. Never scatter test artifacts in the working directory and clean them up with `defer: rm` — route them correctly from the start. The `.gitignore` MUST include `.test-output/`. Pattern:
+    ```yaml
+    # Root Taskfile.yml
+    vars:
+      TEST_DIR: '{{.TEST_DIR | default ".test-output"}}'
+
+    # In includes, resolve to absolute path:
+    vars:
+      TEST_DIR: '{{.ROOT_DIR}}/{{.TEST_DIR | default ".test-output"}}'
+
+    # Test task example (Venom):
+    test:
+      desc: Run tests
+      cmds:
+        - mkdir -p "{{.TEST_DIR}}"
+        - venom run tests/ --output-dir "{{.TEST_DIR}}"
     ```
 
 ## STANDARD TOP-LEVEL TASKS — consistent developer ergonomics
@@ -115,13 +133,13 @@ Every project should expose a predictable set of top-level task names. A develop
 | `lint`  | Run linters                                              | Project has linters configured    |
 | `fmt`   | Format code                                              | Project has formatters configured |
 | `check` | Run **all** quality gates (lint + test + format-check)   | Always                            |
-| `clean` | Remove build artifacts, caches, generated files          | Project produces build output     |
+| `clean` | Remove build artifacts, test output, caches              | Project produces build output     |
 
 ### Rules for standard tasks
 
 - **Use these exact names.** Do not invent alternatives like `run-tests`, `do-lint`, `compile`, or `format`.
 - **`check` is the meta-task.** It should depend on the applicable quality gates: `deps: [lint, test]`. Add `fmt` checks as appropriate.
-- Standard tasks live in the root Taskfile.yml as shortcuts delegating to includes.
+- Standard tasks live in the root Taskfile.yml as aliases delegating to includes.
 - **Only include what applies.** A static site with no tests skips `test`. A script project with no build step skips `build`. Don't add empty stubs.
 
 ## NAMESPACING — separation of concerns with includes
@@ -130,8 +148,8 @@ Every project should expose a predictable set of top-level task names. A develop
 
 - **Use includes for multi-concern projects.** When a project has tasks spanning different domains (e.g., docker + database + CI), organize them into includes by concern.
 - **Single-concern projects may use a single `dev.yml` include** — even a Go project with only build/test/lint/fmt benefits from the thin-root pattern. The root stays a consistent entry point.
-- The root Taskfile.yml is a **thin orchestrator**: project-wide variables, include imports, and shortcut tasks that delegate to includes.
-- The only tasks that live directly in the root Taskfile.yml are `default`, shortcut tasks (that delegate to included tasks), and truly project-wide tasks like `clean` or `check`.
+- The root Taskfile.yml is a **thin orchestrator**: project-wide variables, include imports, and alias tasks that delegate to includes.
+- The only tasks that live directly in the root Taskfile.yml are `default`, alias tasks (that delegate to included tasks), and truly project-wide tasks like `clean` or `check`.
 
 ### How to identify concerns — READ CAREFULLY
 
@@ -150,7 +168,7 @@ Group by **domain**, not by tool. A concern is a cluster of tasks that share con
 | Kubernetes           | `k8s.yml`     | apply, diff, rollback, logs         |
 | Documentation        | `docs.yml`    | build, serve, publish               |
 
-For single-concern projects (e.g., a Go or Rust project with only build/test/lint/fmt), use a single `dev.yml` include. The root Taskfile.yml still stays thin with shortcuts.
+For single-concern projects (e.g., a Go or Rust project with only build/test/lint/fmt), use a single `dev.yml` include. The root Taskfile.yml still stays thin with aliases.
 
 ### Root Taskfile.yml as orchestrator
 
@@ -158,14 +176,14 @@ The root Taskfile.yml should be a **thin entry point**:
 
 1. **Project-wide variables** — shared across concerns (app name, environment).
 2. **Include imports** — one include per concern.
-3. **Shortcut tasks** — high-level developer workflows that delegate to included tasks.
+3. **Alias tasks** — high-level developer workflows that delegate to included tasks.
 
-Shortcut tasks provide a flat namespace for common tasks so developers don't need to know the include structure for everyday work:
+Alias tasks provide a flat namespace for common tasks so developers don't need to know the include structure for everyday work:
 
 ```yaml
 tasks:
   build:
-    desc: Build the project (shortcut)
+    desc: "Alias for docker:build"
     cmds:
       - task: docker:build
 
@@ -242,47 +260,17 @@ deploy:
 
 ## Template: root Taskfile.yml
 
-When creating a Taskfile.yml, start by copying this template and adapting it. For projects with includes, the root Taskfile.yml acts as a thin orchestrator — project-wide variables, imports, and shortcut tasks that delegate to includes.
+When creating a new Taskfile.yml, **copy the base template** and adapt it. Do NOT generate the root Taskfile.yml from scratch.
 
-```yaml
-version: '3'
-
-includes:
-  dev:
-    taskfile: .taskfiles/dev.yml
-
-vars:
-  APP_NAME: '{{.APP_NAME | default "myapp"}}'
-
-tasks:
-  default:
-    desc: List all available tasks
-    silent: true
-    cmd: task --list
-
-  test:
-    desc: Run tests (shortcut)
-    cmds:
-      - task: dev:test
-
-  lint:
-    desc: Run linters (shortcut)
-    cmds:
-      - task: dev:lint
-
-  build:
-    desc: Build the project (shortcut)
-    cmds:
-      - task: dev:build
-
-  check:
-    desc: Run all quality gates
-    deps: [lint, test]
-
-  clean:
-    desc: Remove build artifacts
-    cmd: rm -rf bin/ dist/
-```
+1. Copy `.claude/skills/taskfile/templates/Taskfile.yml` to the project root as `Taskfile.yml`.
+   If the template is not at `.claude/skills/taskfile/templates/Taskfile.yml`, check `~/.claude/skills/taskfile/templates/Taskfile.yml`.
+2. Adapt the copy:
+   - Update `APP_NAME` default to the project name.
+   - Add/remove include imports to match the project's concerns.
+   - Add/remove alias tasks to match the includes.
+   - Adjust `clean` targets to match the project's build output (keep `{{.TEST_DIR}}`).
+   - Remove aliases for tasks that don't apply (e.g., drop `build` if no build step).
+3. Do NOT remove the `default` task, `version: '3'`, `TEST_DIR` variable, or `check` meta-task.
 
 ## Template: include file at `.taskfiles/<name>.yml`
 
@@ -298,7 +286,6 @@ vars:
 
 tasks:
   default:
-    desc: List tasks in this module
     silent: true
     cmd: task docker --list
 
@@ -334,7 +321,7 @@ After the lint passes, verify these by inspection:
 
 - [ ] Tasks are organized into includes by domain concern (purpose, not implementation tool)
 - [ ] Includes are named after concerns, not tools (e.g., tests that run in Docker belong in `test.yml`, not `docker.yml`)
-- [ ] Root Taskfile.yml with includes has shortcut tasks for common workflows
+- [ ] Root Taskfile.yml with includes has alias tasks for common workflows
 - [ ] Includes are self-contained — no cross-include task dependencies
 - [ ] Included tasks use `{{.ROOT_DIR}}` paths, not bare relative paths
 - [ ] Standard task names used where applicable (`dev`, `test`, `build`, `lint`, `fmt`, `check`, `clean`)
@@ -344,3 +331,4 @@ After the lint passes, verify these by inspection:
 - [ ] Build tasks use `sources:` / `generates:` where applicable
 - [ ] Shared dependency tasks use `run: once` to avoid redundant execution
 - [ ] Inline scripts longer than ~5 lines are extracted to `scripts/`
+- [ ] All test output routed to `.test-output/` — no logs scattered in working directory

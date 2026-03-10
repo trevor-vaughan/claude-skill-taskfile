@@ -11,12 +11,11 @@ vars:
 
 tasks:
   default:
-    desc: List all available tasks
     silent: true
     cmd: task --list
 
   build:
-    desc: Build the project (shortcut)
+    desc: "Alias for docker:build"
     cmds:
       - task: docker:build
 

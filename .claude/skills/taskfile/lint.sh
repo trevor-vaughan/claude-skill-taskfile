@@ -70,7 +70,6 @@ check_file() {
     local task_names_arr=()
     local current_task=""
     local has_desc=0
-    local default_has_desc=0
     local has_task_list=0
     local in_tasks_block=0
     while IFS= read -r line; do
@@ -101,7 +100,7 @@ check_file() {
         # Check for desc field (4-space indented under task)
         if [[ "$line" =~ ^[[:space:]]{4}desc: ]]; then
             has_desc=1
-            [[ "$current_task" == "default" ]] && default_has_desc=1
+
         fi
         # Check for task --list in default task body
         if [[ "$current_task" == "default" ]] && [[ "$line" =~ task.*--list || "$line" =~ task\ -l ]]; then
