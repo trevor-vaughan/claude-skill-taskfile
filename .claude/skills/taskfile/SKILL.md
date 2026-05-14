@@ -246,9 +246,38 @@ setup:
 
 Use `run: once` for tasks that appear as dependencies of multiple other tasks (e.g., `setup` depended on by both `test` and `build`).
 
+### Ordering invariants in `cmds:`
+
+Sequential `cmds:` run in declaration order. Usually that order is incidental, but when one cmd produces an artifact that a later cmd copies, packages, or seals, the order is **load-bearing** — reversing it produces an incomplete artifact *silently*, because each command still succeeds in isolation. `task` does not error; the breakage only surfaces at runtime in the consumer.
+
+```yaml
+install:
+  cmds:
+    # npm install must run BEFORE the package step — the package step
+    # copies node_modules verbatim, so deps have to exist on disk first.
+    # Reversing the order leaves the installed package missing runtime
+    # deps with no error from task itself.
+    - task: install:deps
+    - task: install:package
+```
+
+When the order is load-bearing, add a comment naming the constraint *and* the consequence of reversing it. Without it, a future cleanup that alphabetizes or otherwise tidies the `cmds:` list will silently break the workflow.
+
+Prefer `deps:` when the dependency is intrinsic to the consumer task (always required, regardless of who calls it):
+
+```yaml
+install:package:
+  desc: Build and publish — always pulls deps first
+  deps: [install:deps]
+  cmds:
+    - tool publish
+```
+
+Use ordered `cmds:` with a comment when the dependency exists only at the orchestrator level — for example, when the consumer task should remain standalone-runnable to test a "bare" path without the upstream side-effect.
+
 ### Required variables
 
-Validate that variables are set before execution:
+Validate that variables are set before execution. Use the shorthand list form for a presence check:
 
 ```yaml
 deploy:
@@ -257,6 +286,22 @@ deploy:
     vars: [ENV, VERSION]
   cmd: deploy --env {{.ENV}} --version {{.VERSION}}
 ```
+
+Use the longhand object form to constrain a variable to an enumerated set (Task 3.36+):
+
+```yaml
+install:
+  desc: Install at the chosen scope
+  vars:
+    SCOPE: '{{.SCOPE | default "user"}}'
+  requires:
+    vars:
+      - name: SCOPE
+        enum: [user, project]
+  cmd: tool install --scope {{.SCOPE}}
+```
+
+`requires:` validates but does not populate — pair it with a `vars:` default to get "default to X, reject anything outside the enum." Prefer `enum:` over hand-rolled shell preconditions like `[ "$X" = "a" ] || [ "$X" = "b" ]` — the built-in error lists allowed values automatically, and the rule lives next to the variable rather than in a separate `preconditions:` block.
 
 ## Template: root Taskfile.yml
 
